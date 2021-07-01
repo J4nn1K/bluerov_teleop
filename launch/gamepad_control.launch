@@ -1,0 +1,8 @@
+<launch>
+    <arg name="vehicle_name" default="klopsi"/>
+    <group ns="$(arg vehicle_name)">
+        <node name="joy_node" pkg="joy" type="joy_node"></node>
+        <node name="gamepad" pkg="bluerov_teleop" type="gamepad_control.py"></node>
+        <node name="mixer" pkg="bluerov_teleop" type="mixer.py"></node>
+    </group>
+</launch>
