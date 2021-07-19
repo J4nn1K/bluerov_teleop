@@ -13,7 +13,7 @@ from std_msgs.msg import String
 class GamepadControlNode():
     def __init__(self, name):
         rospy.init_node(name)
-        # self.arm_vehicle()
+        self.arm_vehicle()
 
         self.thrust = 0.0
         self.left_stick_vertical = 0.0
@@ -31,6 +31,9 @@ class GamepadControlNode():
         self.right_stick_horizontal = 0.0
         # self.yaw_rate_scaler = 0.2
 
+        self.pitch_rate = 0.0
+        self.roll_rate = 0.0
+
         self.manipulator_state = 'neutral'
         self.a_pressed = 0
         self.b_pressed = 0
@@ -43,17 +46,17 @@ class GamepadControlNode():
                                                queue_size=1)                
         self.gamepad_sub = rospy.Subscriber("joy", Joy, self.gamepad_callback)
 
-    # def arm_vehicle(self):
-    #     rospy.wait_for_service("mavros/cmd/arming")
-    #     arm = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)
-    #     while not arm(True).success:
-    #         rospy.logwarn_throttle(1, "Could not arm vehicle. Keep trying.")
-    #     rospy.loginfo("Armed successfully.")
-    
-    # def disarm_vehicle(self):
-    #     rospy.wait_for_service("mavros/cmd/arming")
-    #     arm = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)
-    #     arm(False)
+    def arm_vehicle(self):
+        rospy.wait_for_service("mavros/cmd/arming")
+        arm = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)
+        while not arm(True).success:
+            rospy.logwarn_throttle(1, "Could not arm vehicle. Keep trying.")
+        rospy.loginfo("Armed successfully.")
+
+    def disarm_vehicle(self):
+        rospy.wait_for_service("mavros/cmd/arming")
+        arm = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)
+        arm(False)
 
     def run(self):
         rate = rospy.Rate(30.0)
@@ -77,8 +80,10 @@ class GamepadControlNode():
     def handle_inputs(self):
         self.thrust = self.left_stick_vertical
         self.lateral_thrust = self.left_stick_horizontal
-        self.vertical_thrust = self.right_stick_vertical
+        # self.vertical_thrust = self.right_stick_vertical
+        self.pitch_rate = self.right_stick_vertical
         self.yaw_rate = self.right_stick_horizontal
+
 
         if self.a_pressed == 1:
             self.manipulator_state = "close"
@@ -89,11 +94,17 @@ class GamepadControlNode():
     
     def publish_message(self):
         msg = ActuatorCommands()
+        
         msg.header.stamp = rospy.Time.now()
+        
         msg.thrust = self.thrust
-        msg.yaw = self.yaw_rate
         msg.lateral_thrust = self.lateral_thrust
         msg.vertical_thrust = self.vertical_thrust
+        
+        msg.yaw = self.yaw_rate
+        msg.pitch = self.pitch_rate
+        msg.roll = self.roll_rate
+        
         self.actuator_pub.publish(msg)
 
         msg = String()
